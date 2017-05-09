@@ -4,7 +4,7 @@ import patsy
 import statsmodels.api
 
 
-def get_data(season='latest', division='E0'):
+def get_data(season, division):
     url = 'https://api.project-hanoi.co.uk/football-data/v1/{0}/{1}'.format(season, division)
     response = requests.get(url)
 
@@ -20,13 +20,15 @@ def get_data(season='latest', division='E0'):
     away = away.rename(index=str, columns=lookup)
     away['Home'] = 0
 
-    return home.append(away, ignore_index=True)
+    combined = home.append(away, ignore_index=True)
+
+    return patsy.dmatrices('Goals ~ Home + Attack + Defend - 1', data=combined, return_type='dataframe')
 
 
-def run_model():
-    goals, teams = patsy.dmatrices('Goals ~ Home + Attack + Defend - 1', data=get_data(), return_type='dataframe')
+def run_model(season='latest', division='E0'):
+    goals, teams = get_data(season, division)
 
-    model = statsmodels.api.GLM(endog=goals, exog=teams)
+    model = statsmodels.api.GLM(goals, teams)
     result = model.fit()
 
     print(result.summary())
