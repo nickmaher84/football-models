@@ -4,7 +4,7 @@ import patsy
 import statsmodels.api
 
 
-def get_data(season, division, variables=1):
+def get_data(season, division, variables):
     assert isinstance(variables, int) and variables in [1, 2, 3, 4]
 
     url = 'https://api.project-hanoi.co.uk/football-data/v1/{0}/{1}'.format(season, division)
@@ -83,9 +83,9 @@ def get_data(season, division, variables=1):
         return combined['Goals'], teams
 
 
-def run_model(season='latest', division='E0'):
+def run_model(season='latest', division='E0', variables=2):
     poisson = statsmodels.api.families.Poisson()
-    goals, teams = get_data(season, division, variables=2)
+    goals, teams = get_data(season, division, variables)
 
     model = statsmodels.api.GLM(goals, teams, poisson)
     result = model.fit()
