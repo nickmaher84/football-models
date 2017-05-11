@@ -23,23 +23,64 @@ def get_data(season, division, variables=1):
     away['Home'] = 0
 
     combined = home.append(away, ignore_index=True)
+    combined['Constant'] = 1
 
     if variables == 1:
         """One variable per team, plus a global home advantage term"""
-        pass
+        a = combined.pivot(columns='Attack', values='Constant').fillna(0)
+        d = combined.pivot(columns='Defend', values='Constant').fillna(0)
+
+        teams = a - d
+        teams['Home'] = combined['Home']
+
+        return combined['Goals'], teams
 
     elif variables == 2:
         """Two variables per team - attack and defend - plus a global home advantage term"""
+        combined['Attack'] += '.Attack'
+        combined['Defend'] += '.Defend'
 
-        return patsy.dmatrices('Goals ~ Home + Attack + Defend - 1', data=combined, return_type='dataframe')
+        a = combined.pivot(columns='Attack', values='Constant').fillna(0)
+        d = combined.pivot(columns='Defend', values='Constant').fillna(0)
+
+        teams = a.merge(-d, left_index=True, right_index=True)
+        teams['Home'] = combined['Home']
+
+        return combined['Goals'], teams
 
     elif variables == 3:
         """Three variables per team for attack, defend and home advantage"""
-        pass
+        combined['Home Advantage'] = combined['Attack'] + '.Home'
+        combined['Attack'] += '.Attack'
+        combined['Defend'] += '.Defend'
+
+        h = combined.pivot(columns='Home Advantage', values='Home').fillna(0)
+        a = combined.pivot(columns='Attack', values='Constant').fillna(0)
+        d = combined.pivot(columns='Defend', values='Constant').fillna(0)
+
+        teams = a.merge(-d, left_index=True, right_index=True)
+        teams = teams.merge(h, left_index=True, right_index=True)
+
+        return combined['Goals'], teams
 
     elif variables == 4:
         """Four variables per team, with attack and defend, with and without home advantage"""
-        pass
+        combined['Away'] = combined['Constant'] - combined['Home']
+        combined['Home Attack'] = combined['Attack'] + '.Home Attack'
+        combined['Home Defend'] = combined['Defend'] + '.Home Defend'
+        combined['Attack'] += '.Away Attack'
+        combined['Defend'] += '.Away Defend'
+
+        ha = combined.pivot(columns='Home Attack', values='Home').fillna(0)
+        aa = combined.pivot(columns='Attack', values='Away').fillna(0)
+        hd = combined.pivot(columns='Home Defend', values='Away').fillna(0)
+        ad = combined.pivot(columns='Defend', values='Home').fillna(0)
+
+        teams = ha.merge(aa, left_index=True, right_index=True)
+        teams = teams.merge(-hd, left_index=True, right_index=True)
+        teams = teams.merge(-ad, left_index=True, right_index=True)
+
+        return combined['Goals'], teams
 
 
 def run_model(season='latest', division='E0'):
