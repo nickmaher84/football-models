@@ -26,9 +26,10 @@ def get_data(season, division):
 
 
 def run_model(season='latest', division='E0'):
+    poisson = statsmodels.api.families.Poisson()
     goals, teams = get_data(season, division)
 
-    model = statsmodels.api.GLM(goals, teams)
+    model = statsmodels.api.GLM(goals, teams, poisson)
     result = model.fit()
 
     print(result.summary())
