@@ -1,6 +1,5 @@
 import requests
 import pandas.io.json
-import patsy
 import statsmodels.api
 
 
