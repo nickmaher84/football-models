@@ -64,7 +64,7 @@ def full_refresh(username, password):
                 player[k] = sum([result.get(k, 0) for result in player['history']])
         player['short_play'] = len([result for result in player['history'] if position['limit']['long_play'] > result['minutes'] > 0])
         player['long_play'] = len([result for result in player['history'] if position['limit']['long_play'] <= result['minutes']])
-        player['participation'] = player['minutes'] / (90 * len(player['history']))
+        player['participation'] = player['minutes'] / (90 * len(player['history'])) if player['minutes'] else 0
 
         player.setdefault('p90', dict())
         for k in scoring:
