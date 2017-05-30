@@ -1,9 +1,11 @@
 import requests
+import numpy
+import pandas
 import pandas.io.json
 import statsmodels.api
 
 
-def get_data(season, division, variables):
+def get_data(season, division, variables, mu):
     assert isinstance(variables, int) and variables in [1, 2, 3, 4]
 
     url = 'https://api.project-hanoi.co.uk/football-data/v1/{0}/{1}'.format(season, division)
@@ -11,18 +13,20 @@ def get_data(season, division, variables):
 
     data = pandas.io.json.json_normalize(response.json())
 
-    lookup = {'Home': 'Attack', 'Away': 'Defend', 'Full Time.Home': 'Goals'}
+    lookup = {'Home': 'Attack', 'Away': 'Defend', 'Full Time.Home': 'Goals', 'Date': 'Date'}
     home = data[list(lookup.keys())]
     home = home.rename(index=str, columns=lookup)
     home['Home'] = 1
 
-    lookup = {'Away': 'Attack', 'Home': 'Defend', 'Full Time.Away': 'Goals'}
+    lookup = {'Away': 'Attack', 'Home': 'Defend', 'Full Time.Away': 'Goals', 'Date': 'Date'}
     away = data[list(lookup.keys())]
     away = away.rename(index=str, columns=lookup)
     away['Home'] = 0
 
     combined = home.append(away, ignore_index=True)
     combined['Constant'] = 1
+    combined['Date'] = pandas.to_datetime(combined['Date'])
+    combined['Weight'] = numpy.exp(mu * (combined['Date'] - pandas.to_datetime('now')).dt.days)
 
     if variables == 1:
         """One variable per team, plus a global home advantage term"""
@@ -32,7 +36,7 @@ def get_data(season, division, variables):
         teams = a - d
         teams['Home'] = combined['Home']
 
-        return combined['Goals'], teams
+        return combined['Goals'], teams, combined['Weight']
 
     elif variables == 2:
         """Two variables per team - attack and defend - plus a global home advantage term"""
@@ -45,7 +49,7 @@ def get_data(season, division, variables):
         teams = a.merge(-d, left_index=True, right_index=True)
         teams['Home'] = combined['Home']
 
-        return combined['Goals'], teams
+        return combined['Goals'], teams, combined['Weight']
 
     elif variables == 3:
         """Three variables per team for attack, defend and home advantage"""
@@ -60,7 +64,7 @@ def get_data(season, division, variables):
         teams = a.merge(-d, left_index=True, right_index=True)
         teams = teams.merge(h, left_index=True, right_index=True)
 
-        return combined['Goals'], teams
+        return combined['Goals'], teams, combined['Weight']
 
     elif variables == 4:
         """Four variables per team, with attack and defend, with and without home advantage"""
@@ -79,14 +83,14 @@ def get_data(season, division, variables):
         teams = teams.merge(-hd, left_index=True, right_index=True)
         teams = teams.merge(-ad, left_index=True, right_index=True)
 
-        return combined['Goals'], teams
+        return combined['Goals'], teams, combined['Weight']
 
 
-def run_model(season='latest', division='E0', variables=2):
+def run_model(season='latest', division='E0', variables=2, mu=0.0):
     poisson = statsmodels.api.families.Poisson()
-    goals, teams = get_data(season, division, variables)
+    goals, teams, weights = get_data(season, division, variables, mu)
 
-    model = statsmodels.api.GLM(goals, teams, poisson)
+    model = statsmodels.api.GLM(goals, teams, poisson, freq_weights=weights)
     result = model.fit()
 
     print(result.summary())
@@ -94,4 +98,4 @@ def run_model(season='latest', division='E0', variables=2):
     return result
 
 if __name__ == '__main__':
-    run_model()
+    run_model(mu=0.0063)
