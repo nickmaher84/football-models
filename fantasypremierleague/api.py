@@ -93,6 +93,21 @@ class FantasyPremierLeague:
     def my_team(self, entry_id):
         return self.get_endpoint('my-team', entry_id, auth=True)
 
+    def leagues_entered(self, entry_id):
+        return self.get_endpoint('leagues-entered', entry_id, auth=True)
+
+    def leagues_classic(self, league_id):
+        return self.get_endpoint('leagues-classic', league_id, auth=True)
+
+    def leagues_classic_standings(self, league_id):
+        return self.get_endpoint('leagues-classic-standings', league_id)
+
+    def leagues_h2h(self, league_id):
+        return self.get_endpoint('leagues-h2h', league_id, auth=True)
+
+    def leagues_h2h_standings(self, league_id):
+        return self.get_endpoint('leagues-h2h-standings', league_id)
+
     def static_data(self):
         return self.get_endpoint('bootstrap-static')
 
