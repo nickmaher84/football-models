@@ -44,13 +44,15 @@ class FantasyPremierLeague:
         else:
             return False
 
-    def get_endpoint(self, page, item=None, auth=False):
+    def get_endpoint(self, page, item=None, subpage=None, auth=False):
         if not self.logged_in() and auth:
             self.login(self.username, self.password)
 
         url = 'https://fantasy.premierleague.com/drf/{0}'.format(page)
         if item is not None:
             url += '/{0}'.format(item)
+        if subpage:
+            url += '/{0}'.format(subpage)
 
         try:
             response = self.session.get(url)
@@ -86,6 +88,9 @@ class FantasyPremierLeague:
 
     def entry(self, entry_id):
         return self.get_endpoint('entry', entry_id)
+
+    def entry_history(self, entry_id):
+        return self.get_endpoint('entry', entry_id, 'history')
 
     def transfers(self):
         return self.get_endpoint('transfers', auth=True)
